@@ -1,6 +1,7 @@
 package tplus
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -13,8 +14,8 @@ import (
 
 const (
 	tplusToken = "<!--tplusContent-->"
-	tplusHead  = "--tplusHead"
-	tplusTail  = "--tplusTail"
+	tplusHead  = "tplusHead--"
+	tplusTail  = "tplusTail--"
 )
 
 // Engine struct
@@ -102,11 +103,11 @@ func (e *Engine) ParseTplusTokens(name string, content string) error {
 		_, err := e.Templates.New(name).Parse(tpls[0])
 		return err
 	case 2:
-		_, err := e.Templates.New(name + tplusHead).Parse(tpls[0])
+		_, err := e.Templates.New(tplusHead + name).Parse(tpls[0])
 		if err != nil {
 			return err
 		}
-		_, err = e.Templates.New(name + tplusTail).Parse(tpls[1])
+		_, err = e.Templates.New(tplusTail + name).Parse(tpls[1])
 		if err != nil {
 			return err
 		}
@@ -119,8 +120,11 @@ func (e *Engine) ParseTplusTokens(name string, content string) error {
 
 // Render will render the template by name as well as wrap any layouts around it in left to right order
 func (e *Engine) Render(out io.Writer, name string, binding interface{}, layouts ...string) error {
+	if len(layouts) == 0 {
+		return e.Templates.ExecuteTemplate(out, name, binding)
+	}
 	for i := len(layouts) - 1; i >= 0; i-- {
-		if err := e.Templates.ExecuteTemplate(out, layouts[i]+tplusHead, binding); err != nil {
+		if err := e.Templates.ExecuteTemplate(out, tplusHead+layouts[i], binding); err != nil {
 			return err
 		}
 	}
@@ -128,9 +132,10 @@ func (e *Engine) Render(out io.Writer, name string, binding interface{}, layouts
 		return err
 	}
 	for _, l := range layouts {
-		if err := e.Templates.ExecuteTemplate(out, l+tplusTail, binding); err != nil {
+		if err := e.Templates.ExecuteTemplate(out, tplusTail+l, binding); err != nil {
 			return err
 		}
 	}
-	return fmt.Errorf("error executing template %v, with layouts %v", name, layouts)
+	// more performant than fmt.Errorf
+	return errors.New(strings.Join([]string{"error executing template "}, name))
 }
