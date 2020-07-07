@@ -11,9 +11,14 @@ func trim(str string) string {
 	return strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(str, " "))
 }
 
-func Test_HTML_Render(t *testing.T) {
-	engine := New("./templates", ".html")
-	// Partials
+var engine *Engine
+
+func init() {
+	engine = New("./templates", ".html")
+	engine.Load()
+}
+
+func TestPartials(t *testing.T) {
 	var buf bytes.Buffer
 	engine.Render(&buf, "index", map[string]interface{}{
 		"Title": "Hello, World!",
@@ -23,62 +28,67 @@ func Test_HTML_Render(t *testing.T) {
 	if expect != result {
 		t.Fatalf("Expected:\n%s\nResult:\n%s\n", expect, result)
 	}
-	// Layout
-	buf.Reset()
+}
+
+func TestLayout(t *testing.T) {
+	var buf bytes.Buffer
 	engine.Render(&buf, "index", nil, "layouts/main")
-	expect = `<!DOCTYPE html> <html> <head> <title>Main</title> </head> <body> <h2>Header</h2> <h1></h1> <h2>Footer</h2> </body> </html>`
-	result = trim(buf.String())
+	expect := `<!DOCTYPE html> <html> <head> <title>Main</title> </head> <body> <h2>Header</h2> <h1></h1> <h2>Footer</h2> </body> </html>`
+	result := trim(buf.String())
 	if expect != result {
 		t.Fatalf("Expected:\n%s\nResult:\n%s\n", expect, result)
 	}
-	// Nested Layout
-	buf.Reset()
+}
+func TestNestedLayout(t *testing.T) {
+	var buf bytes.Buffer
 	engine.Render(&buf, "index", nil, "layouts/nested", "layouts/main")
-	expect = `<!DOCTYPE html> <html> <head> <title>Main</title> </head> <body> <div id="nested"> <h2>Header</h2> <h1></h1> <h2>Footer</h2> </div> </body> </html>`
-	result = trim(buf.String())
+	expect := `<!DOCTYPE html> <html> <head> <title>Main</title> </head> <body> <div id="nested"> <h2>Header</h2> <h1></h1> <h2>Footer</h2> </div> </body> </html>`
+	result := trim(buf.String())
 	if expect != result {
 		t.Fatalf("Expected:\n%s\nResult:\n%s\n", expect, result)
 	}
-	// Component
-	buf.Reset()
-	engine.Render(&buf, "index", nil, "components/widget-host")
-	expect = `<!DOCTYPE html> <html> <head> <title>Main</title> </head> <body> <div id="nested"> <h2>Header</h2> <h1></h1> <h2>Footer</h2> </div> </body> </html>`
-	result = trim(buf.String())
+}
+
+func TestComponent(t *testing.T) {
+	t.Skip()
+	var buf bytes.Buffer
+	engine.Render(&buf, "index", nil, "components/widget")
+	expect := `<!DOCTYPE html> <html> <head> <title>Main</title> </head> <body> <div id="nested"> <h2>Header</h2> <h1></h1> <h2>Footer</h2> </div> </body> </html>`
+	result := trim(buf.String())
 	if expect != result {
 		t.Fatalf("Expected:\n%s\nResult:\n%s\n", expect, result)
 	}
-	// Single
-	buf.Reset()
+}
+
+func TestSingle(t *testing.T) {
+	var buf bytes.Buffer
 	engine.Render(&buf, "errors/404", map[string]interface{}{
 		"Title": "Hello, World!",
 	})
-	expect = `<h1>Hello, World!</h1>`
-	result = trim(buf.String())
+	expect := `<h1>Hello, World!</h1>`
+	result := trim(buf.String())
 	if expect != result {
 		t.Fatalf("Expected:\n%s\nResult:\n%s\n", expect, result)
 	}
 }
 
 func BenchmarkMyRenderLayout(b *testing.B) {
-	engine := New("./templates", ".html")
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
 		engine.Render(&buf, "index", nil, "layouts/main")
 	}
 }
 
-func BenchmarkMyRenderNestedLayout(b *testing.B) {
-	engine := New("./templates", ".html")
-	var buf bytes.Buffer
-	for n := 0; n < b.N; n++ {
-		engine.Render(&buf, "index", nil, "layouts/nested", "layouts/main")
-	}
-}
-
 func BenchmarkMyRender(b *testing.B) {
-	engine := New("./templates", ".html")
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
 		engine.Render(&buf, "index", nil)
+	}
+}
+
+func BenchmarkMyRenderNestedLayout(b *testing.B) {
+	var buf bytes.Buffer
+	for n := 0; n < b.N; n++ {
+		engine.Render(&buf, "index", nil, "layouts/nested", "layouts/main")
 	}
 }
