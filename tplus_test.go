@@ -17,7 +17,11 @@ var engine *Engine
 
 func init() {
 	engine = New("./templates", ".html")
-	engine.Load()
+	// add the embed function to satisfy fiber layout for benchmarking
+	engine.AddFunc("embed", func() string { return "noop" })
+	if err := engine.Load(); err != nil {
+		panic(err)
+	}
 }
 
 func TestPartials(t *testing.T) {
@@ -96,16 +100,16 @@ func BenchmarkRenderNestedLayout(b *testing.B) {
 }
 
 func BenchmarkFiberRenderLayout(b *testing.B) {
-	fe := html.New("./fibertemplates", ".html")
+	fe := html.New("./templates", ".html")
 	fe.Load()
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
-		fe.Render(&buf, "index", nil, "layouts/main")
+		fe.Render(&buf, "index", nil, "layouts/fiberlayout")
 	}
 }
 
 func BenchmarkFiberRender(b *testing.B) {
-	fe := html.New("./fibertemplates", ".html")
+	fe := html.New("./templates", ".html")
 	fe.Load()
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
