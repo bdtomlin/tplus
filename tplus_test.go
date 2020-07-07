@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/gofiber/template/html"
 )
 
 func trim(str string) string {
@@ -72,23 +74,41 @@ func TestSingle(t *testing.T) {
 	}
 }
 
-func BenchmarkMyRenderLayout(b *testing.B) {
+func BenchmarkRenderLayout(b *testing.B) {
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
 		engine.Render(&buf, "index", nil, "layouts/main")
 	}
 }
 
-func BenchmarkMyRender(b *testing.B) {
+func BenchmarkRender(b *testing.B) {
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
 		engine.Render(&buf, "index", nil)
 	}
 }
 
-func BenchmarkMyRenderNestedLayout(b *testing.B) {
+func BenchmarkRenderNestedLayout(b *testing.B) {
 	var buf bytes.Buffer
 	for n := 0; n < b.N; n++ {
 		engine.Render(&buf, "index", nil, "layouts/nested", "layouts/main")
+	}
+}
+
+func BenchmarkFiberRenderLayout(b *testing.B) {
+	fe := html.New("./fibertemplates", ".html")
+	fe.Load()
+	var buf bytes.Buffer
+	for n := 0; n < b.N; n++ {
+		fe.Render(&buf, "index", nil, "layouts/main")
+	}
+}
+
+func BenchmarkFiberRender(b *testing.B) {
+	fe := html.New("./fibertemplates", ".html")
+	fe.Load()
+	var buf bytes.Buffer
+	for n := 0; n < b.N; n++ {
+		fe.Render(&buf, "index", nil)
 	}
 }
